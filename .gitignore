@@ -1,0 +1,7 @@
+.env
+**/*.pyc
+*.env
+*.DS_Store
+*.gz
+*.parquet
+*.tar
