@@ -5,4 +5,8 @@
 *.gz
 *.parquet
 *.tar
-spark-warehouse/
+spark-warehouse/*
+*.log
+/.ipynb_checkpoints
+*.dat
+metastore_db/*
