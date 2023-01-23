@@ -21,17 +21,15 @@ PLAYERS_ACTIONS_PATH = os.path.join(BASE_PATH, 'players_actions')
 LABELS_PATH = os.path.join(BASE_PATH, 'labels')
 
 for filename in os.listdir(DATA_PATH):
-    
-    if 'label' in filename:
-        
-        print('label')
 
-    elif 'traindata' in filename:
+    if 'traindata' in filename:
         
         shutil.unpack_archive(os.path.join(DATA_PATH, filename), EXTRACT_PATH)
 
-for filename in tqdm(os.listdir(EXTRACT_PATH)):
+filepaths = [os.path.join(EXTRACT_PATH, f) for f in os.listdir(EXTRACT_PATH) if f != '.placeholder']
 
-        df = spark.read.option("header", "true").csv(os.path.join(EXTRACT_PATH, filename))
+for filename in tqdm(filepaths):
 
-        df.write.mode("overwrite").parquet(path=os.path.join(PLAYERS_ACTIONS_PATH, f"{str(filename).replace('.csv', '').replace('.gz', '')}.parquet"))
+    df = spark.read.option("header", "true").csv(os.path.join(EXTRACT_PATH, filename))
+
+    df.write.mode("overwrite").parquet(path=os.path.join(PLAYERS_ACTIONS_PATH, f"{str(filename).replace('.csv', '').replace('.gz', '')}.parquet"))
