@@ -9,17 +9,16 @@ from pyspark import SparkConf, SparkContext
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 SCHEMA_DATA_PATH = os.path.join(BASE_PATH, 'schema_data')
+EXTRACTED_DATA_PATH = os.path.join(BASE_PATH, 'extracted_data')
 FULL_DATA_PATH = os.path.join(BASE_PATH, 'full_data')
-PLAYERS_ACTIONS_PATH = os.path.join(BASE_PATH, 'players_actions')
 
-conf = SparkConf().setAppName("myAppName").setMaster("local[*]").set("spark.executor.cores", "4")
+conf = SparkConf().setAppName("myAppName").setMaster("local[*]").set("spark.executor.cores", "4").set("spark.executor.memory", '8g').set("spark.driver.memory", '8g')
 spark = SparkSession.builder.config(conf=conf).getOrCreate()
 
-parquet_files = [os.path.join(PLAYERS_ACTIONS_PATH, f) for f in os.listdir(PLAYERS_ACTIONS_PATH) if f.endswith('.parquet')]
+parquet_files = [os.path.join(EXTRACTED_DATA_PATH, f) for f in os.listdir(EXTRACTED_DATA_PATH) if f.endswith('.parquet')]
 df = spark.read.format("parquet").load(parquet_files)
 
 df.printSchema()
-# %%
 
 df = df.withColumnRenamed("logid", "logID")
 
@@ -38,13 +37,10 @@ df = logid_df.join(df, ['logID'], how='inner')\
 df = df.join(logdetail_df, ['log_detail_code', 'Log_Detail_Code'], how='left')\
        .drop(df['log_detail_code'])
 
-# %%
-df.createOrReplaceTempView('full_data')
-
-spark.sql("""SELECT seq, 
-                    time, 
-                    LogName_EN, 
-                    actor_account_id 
-             from full_data
-             
-             limit 200;""").show(5)
+df.select("seq", 
+          "time", 
+          "actor_account_id", 
+          "LogName_EN").write\
+                       .option("maxRecordsPerFile", 100000)\
+                       .mode("overwrite")\
+                       .parquet(os.path.join(FULL_DATA_PATH, 'consolidated.parquet'))
