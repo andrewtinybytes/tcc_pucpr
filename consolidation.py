@@ -15,8 +15,11 @@ PLAYERS_ACTIONS_PATH = os.path.join(BASE_PATH, 'players_actions')
 conf = SparkConf().setAppName("myAppName").setMaster("local[*]").set("spark.executor.cores", "4")
 spark = SparkSession.builder.config(conf=conf).getOrCreate()
 
-df = spark.read.option("header","true").option("recursiveFileLookup","true").parquet(PLAYERS_ACTIONS_PATH)
+parquet_files = [os.path.join(PLAYERS_ACTIONS_PATH, f) for f in os.listdir(PLAYERS_ACTIONS_PATH) if f.endswith('.parquet')]
+df = spark.read.format("parquet").load(parquet_files)
+
 df.printSchema()
+# %%
 
 df = df.withColumnRenamed("logid", "logID")
 
@@ -28,13 +31,14 @@ logdetail_df = logdetail_df.withColumnRenamed("Category", "Log_Detail_Code")
 logdetail_df = logdetail_df.withColumnRenamed("Code", "log_detail_code")
 
 df = logid_df.join(df, ['logID'], how='inner')\
-                                              .drop(logid_df.Log_Detail_Code)\
-                                              .drop(df.actor_code)\
-                                              .drop(df.link_id)
+             .drop(logid_df.Log_Detail_Code)\
+             .drop(df.actor_code)\
+             .drop(df.link_id)
 
 df = df.join(logdetail_df, ['log_detail_code', 'Log_Detail_Code'], how='left')\
        .drop(df['log_detail_code'])
 
+# %%
 df.createOrReplaceTempView('full_data')
 
 spark.sql("""SELECT seq, 
