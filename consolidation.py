@@ -47,6 +47,7 @@ df.select("seq",
           "actor_account_id", 
           "LogName_EN",
           "Log_Detail_Name",
+          "Code",
           "Code_Description").write \
    .option("maxRecordsPerFile", 100000) \
    .mode("overwrite")\
