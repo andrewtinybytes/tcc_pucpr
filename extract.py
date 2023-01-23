@@ -26,10 +26,11 @@ for filename in os.listdir(DATA_PATH):
         
         shutil.unpack_archive(os.path.join(DATA_PATH, filename), EXTRACT_PATH)
 
-filepaths = [os.path.join(EXTRACT_PATH, f) for f in os.listdir(EXTRACT_PATH) if f != '.placeholder']
+filepaths = [os.path.join(EXTRACT_PATH, f) for f in os.listdir(EXTRACT_PATH) if f != '.placeholder' and f.endswith('.csv.gz')]
 
 for filename in tqdm(filepaths):
 
     df = spark.read.option("header", "true").csv(os.path.join(EXTRACT_PATH, filename))
 
-    df.write.mode("overwrite").parquet(path=os.path.join(PLAYERS_ACTIONS_PATH, f"{str(filename).replace('.csv', '').replace('.gz', '')}.parquet"))
+    df.write.mode("overwrite").parquet(path=f"{str(filename).replace('.csv', '').replace('.gz', '')}.parquet")
+    os.remove(filename)

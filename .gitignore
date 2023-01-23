@@ -5,3 +5,4 @@
 *.gz
 *.parquet
 *.tar
+spark-warehouse/
