@@ -34,4 +34,4 @@ for filename in tqdm(os.listdir(EXTRACT_PATH)):
 
         df = spark.read.option("header", "true").csv(os.path.join(EXTRACT_PATH, filename))
 
-        df.write.parquet(path=os.path.join(PLAYERS_ACTIONS_PATH, f"{str(filename).replace('.csv', '').replace('.gz', '')}.parquet"))
+        df.write.mode("overwrite").parquet(path=os.path.join(PLAYERS_ACTIONS_PATH, f"{str(filename).replace('.csv', '').replace('.gz', '')}.parquet"))
