@@ -10,3 +10,5 @@ spark-warehouse/*
 /.ipynb_checkpoints
 *.dat
 metastore_db/*
+*.txt
+*.csv
