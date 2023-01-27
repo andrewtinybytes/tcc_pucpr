@@ -9,6 +9,7 @@ from pyspark import SparkConf, SparkContext
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 FULL_DATA_PATH = os.path.join(BASE_PATH, 'full_data')
+LABELS_PATH = os.path.join(BASE_PATH, 'labels')
 
 conf = SparkConf().setAppName("tilt_agg") \
                   .setMaster("local[*]") \
@@ -25,7 +26,11 @@ spark = SparkSession.builder \
 
 df = spark.read.format("parquet").load(os.path.join(FULL_DATA_PATH, 'consolidated.parquet'))
 df.createOrReplaceTempView('full_data')
-# %%
+
+labels = spark.read.format("csv").option("header","true").load(os.path.join(LABELS_PATH, 'train_labeld.csv'))
+labels.createOrReplaceTempView('labels')
+
+spark.sql('drop table if exists tilt_agg;')
 
 %%time
 spark.sql("""
@@ -112,7 +117,7 @@ spark.sql("""
 
              tilt_table as (
 
-                     select distinct(full_data.actor_account_id) as id,
+                     select distinct(full_data.actor_account_id) as actor_account_id,
                             coalesce(die_table.count_die_tilt, 0) as count_die_tilt,
                             coalesce(broke_item_table.count_broke_item_tilt, 0) as count_broke_item_tilt,
                             coalesce(lost_duel_pc_table.lost_duel_pc_tilt, 0) as lost_duel_pc_tilt,
@@ -134,8 +139,11 @@ spark.sql("""
 
              )
 
-             select *
+             select tilt_table.*,
+                    labels.churn_yn,
+                    labels.survival_time
 
              from tilt_table
+             join labels on tilt_table.actor_account_id = labels.actor_account_id
 
              ;""").show(50, truncate=False)

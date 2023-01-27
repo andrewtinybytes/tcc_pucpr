@@ -22,9 +22,15 @@ LABELS_PATH = os.path.join(BASE_PATH, 'labels')
 
 for filename in os.listdir(DATA_PATH):
 
-    if 'traindata' in filename:
+    if 'traindata' in filename and not filename.startswith('.'):
         
         shutil.unpack_archive(os.path.join(DATA_PATH, filename), EXTRACT_PATH)
+
+    else:
+
+        if not filename.startswith('.'):
+
+            shutil.unpack_archive(os.path.join(DATA_PATH, filename), LABELS_PATH)
 
 filepaths = [os.path.join(EXTRACT_PATH, f) for f in os.listdir(EXTRACT_PATH) if f != '.placeholder' and f.endswith('.csv.gz')]
 
