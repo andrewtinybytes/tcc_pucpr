@@ -1,5 +1,6 @@
 # %%
 import os
+os.environ["PYARROW_IGNORE_TIMEZONE"] = "1"
 import pyspark.pandas as ps
 
 from pyspark.sql import SparkSession
@@ -31,6 +32,7 @@ labels = spark.read.format("csv").option("header","true").load(os.path.join(LABE
 labels.createOrReplaceTempView('labels')
 
 spark.sql('drop table if exists tilt_agg;')
+# %%
 
 %%time
 spark.sql("""
@@ -147,3 +149,12 @@ spark.sql("""
              join labels on tilt_table.actor_account_id = labels.actor_account_id
 
              ;""").show(50, truncate=False)
+
+# %% 
+# Mostrar os primeiros elementos da tabela
+spark.sql('SELECT * FROM tilt_agg LIMIT 5;').show()
+
+
+# %%
+# Exportar para CSV dentro da pasta
+spark.sql('SELECT * FROM tilt_agg LIMIT 5;').write.option("header", "true").mode("overwrite").csv("/tcc_pucpr/out.csv")
