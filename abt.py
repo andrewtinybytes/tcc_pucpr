@@ -150,11 +150,9 @@ spark.sql("""
 
              ;""").show(50, truncate=False)
 
-# %% 
-# Mostrar os primeiros elementos da tabela
-spark.sql('SELECT * FROM tilt_agg LIMIT 5;').show()
-
 
 # %%
 # Exportar para CSV dentro da pasta
-spark.sql('SELECT * FROM tilt_agg LIMIT 5;').write.option("header", "true").mode("overwrite").csv("/tcc_pucpr/out.csv")
+spark.sql('SELECT * FROM tilt_agg LIMIT 5;').write.option("header", "true").mode("overwrite").csv(os.path.join(BASE_PATH, 'out.csv'))
+
+
