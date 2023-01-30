@@ -147,3 +147,7 @@ spark.sql("""
              join labels on tilt_table.actor_account_id = labels.actor_account_id
 
              ;""").show(50, truncate=False)
+
+# %%
+# Exportar para CSV dentro da pasta
+spark.sql('SELECT * FROM tilt_agg LIMIT 5;').write.option("header", "true").mode("overwrite").csv(os.path.join(BASE_PATH, 'out.csv'))
