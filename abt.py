@@ -32,7 +32,7 @@ labels.createOrReplaceTempView('labels')
 
 spark.sql('drop table if exists tilt_agg;')
 
-%%time
+
 spark.sql("""
              create table tilt_agg as
              with leave_table as (
@@ -115,9 +115,21 @@ spark.sql("""
 
              ),
 
+             activity_table as (
+
+             select full_data.actor_account_id,
+                    (max(unix_timestamp(to_timestamp(time))) - min(unix_timestamp(to_timestamp(time)))) / 60.0 minutes_played,
+                    count(full_data.seq) as activity_count
+
+             from full_data
+              
+             group by 1
+
+             ),
+
              tilt_table as (
 
-                     select distinct(full_data.actor_account_id) as actor_account_id,
+                     select full_data.actor_account_id,
                             coalesce(die_table.count_die_tilt, 0) as count_die_tilt,
                             coalesce(broke_item_table.count_broke_item_tilt, 0) as count_broke_item_tilt,
                             coalesce(lost_duel_pc_table.lost_duel_pc_tilt, 0) as lost_duel_pc_tilt,
@@ -130,24 +142,43 @@ spark.sql("""
 
                      left join broke_item_table 
                      on full_data.actor_account_id = broke_item_table.actor_account_id
-
+ 
                      left join lost_duel_pc_table 
                      on full_data.actor_account_id = lost_duel_pc_table.actor_account_id
 
                      left join lost_duel_team_table 
                      on full_data.actor_account_id = lost_duel_team_table.actor_account_id
 
+                     group by 1,
+                              2,
+                              3,
+                              4,
+                              5
+
              )
 
-             select tilt_table.*,
+             select tilt_table.actor_account_id,
+                    tilt_table.count_die_tilt,
+                    tilt_table.count_broke_item_tilt,
+                    tilt_table.lost_duel_pc_tilt,
+                    tilt_table.lost_duel_team_tilt,
+                    activity_table.minutes_played,
+                    activity_table.activity_count,
                     labels.churn_yn,
                     labels.survival_time
 
              from tilt_table
-             join labels on tilt_table.actor_account_id = labels.actor_account_id
+
+             join labels 
+             on tilt_table.actor_account_id = labels.actor_account_id
+
+             join activity_table
+             on tilt_table.actor_account_id = activity_table.actor_account_id
 
              ;""").show(50, truncate=False)
 
 # %%
 # Exportar para CSV dentro da pasta
-spark.sql('SELECT * FROM tilt_agg LIMIT 5;').write.option("header", "true").mode("overwrite").csv(os.path.join(BASE_PATH, 'out.csv'))
+
+df_out = spark.sql('SELECT * FROM tilt_agg;')
+df_out.toPandas().to_csv('out.csv', index=False)
