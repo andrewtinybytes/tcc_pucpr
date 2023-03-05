@@ -22,7 +22,8 @@ LABELS_PATH = os.path.join(BASE_PATH, 'labels')
 
 for filename in os.listdir(DATA_PATH):
 
-    if 'traindata' in filename and not filename.startswith('.'):
+    #if 'traindata' in filename and not filename.startswith('.'):
+    if 'testdata' in filename and not filename.startswith('.'):
         
         shutil.unpack_archive(os.path.join(DATA_PATH, filename), EXTRACT_PATH)
 
