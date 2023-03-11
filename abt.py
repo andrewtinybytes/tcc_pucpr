@@ -13,9 +13,9 @@ LABELS_PATH = os.path.join(BASE_PATH, 'labels')
 
 conf = SparkConf().setAppName("tilt_agg") \
                   .setMaster("local[*]") \
-                  .set("spark.executor.cores", "8") \
-                  .set("spark.executor.memory", '8g') \
-                  .set("spark.driver.memory", '8g') \
+                  .set("spark.executor.cores", "2") \
+                  .set("spark.executor.memory", '2g') \
+                  .set("spark.driver.memory", '2g') \
               #     .set("spark.sql.warehouse.dir", "hdfs://namenode/sql/metadata/hive") \
               #     .set("spark.sql.catalogImplementation","hive")
 
@@ -29,6 +29,57 @@ df.createOrReplaceTempView('full_data')
 
 labels = spark.read.format("csv").option("header","true").load(os.path.join(LABELS_PATH, 'train_labeld.csv'))
 labels.createOrReplaceTempView('labels')
+
+
+# %%
+
+spark.sql('drop table if exists ranked_dates;')
+
+spark.sql("""
+
+create table ranked_dates as 
+with max_table as (
+
+       select actor_account_id, 
+              date(max(to_timestamp(time))) last_date
+
+       from full_data
+
+       group by 1
+
+),
+
+distinct_dates_table as (
+
+       select max_table.actor_account_id, 
+              date(to_timestamp(full_data.time)) as distinct_date
+
+       from max_table
+
+       join full_data 
+       on max_table.actor_account_id = full_data.actor_account_id
+
+),
+
+ranked_dates_table as (
+
+       select actor_account_id,
+              distinct_date,
+              rank() over (partition by actor_account_id order by actor_account_id, distinct_date desc) rank_number
+              
+       from distinct_dates_table
+
+       group by 1,
+                2
+
+)
+
+select *
+from ranked_dates_table
+
+""").show(10, truncate=False)
+
+# %%
 
 spark.sql('drop table if exists tilt_agg;')
 
@@ -45,6 +96,11 @@ spark.sql("""
                 from full_data
                 
                 where LogName_EN = 'LeaveWorld'
+
+             ),
+
+             windows_table as (
+
 
              ),
 
@@ -176,6 +232,22 @@ spark.sql("""
              on tilt_table.actor_account_id = activity_table.actor_account_id
 
              ;""").show(50, truncate=False)
+# %%
+
+spark.sql("drop table if exists frequency_table;")
+
+spark.sql("""
+
+create table frequency_table as 
+select actor_account_id, 
+       count(distinct date(to_timestamp(time))) as frequency_days,
+       count(distinct date_trunc('month', to_timestamp(time))) as frequency_months
+
+from full_data 
+
+group by 1
+;""").show()
+
 
 # %%
 # Exportar para CSV dentro da pasta
